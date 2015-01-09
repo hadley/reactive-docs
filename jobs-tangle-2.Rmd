@@ -1,0 +1,52 @@
+---
+title: "Variation in the Jobs Report"
+output: html_document
+runtime: shiny
+---
+  
+Inspired by [How Not to Be Misled by the Jobs Report](http://www.nytimes.com/2014/05/02/upshot/how-not-to-be-misled-by-the-jobs-report.html?_r=0&abt=0002&abg=0), the Upshot.
+
+```{r, message = FALSE, echo = FALSE}
+library(ggvis)
+library(shiny)
+library(tanglekit)
+
+real_jobs <- 150
+months <- 1:12
+```
+
+Every month the US Department of Labor reports how many jobs were added to the economy. If this is lower (or higher!) than expected, the report generates many new articles, tweets, and even influences the stockmarket. But what if that's all just based on random variation due to the uncertainty associated with the estimate?
+
+Take April 2014, for example. In May, the DoL reported that the economy had grown by `r real_jobs`,000, with a standard error of `r tk_drag(55, ",000 jobs", id = "std_err", min = 0, max = 100)`. What does that mean? Let's put it in the context of an imaginary year (which has `r length(months)` months) where the number of jobs changed by `r tk_drag(0, ",000", id = "rate", min = -10, max = 10)` each month.
+
+```{r, fig.width = 2, fig.height = 1.5, echo = FALSE}
+simulate_jobs <- function(months, rate = NULL, stderr = NULL) {
+  if (is.null(rate)) rate <- 0
+  if (is.null(stderr)) stderr <- 55
+  
+  jobs <- real_jobs + months * rate + rnorm(length(months), sd = stderr)
+  data.frame(months = months, jobs = jobs)
+}
+make_jobs <- function() {
+  reactive(simulate_jobs(months, input$rate, input$std_err))
+}
+show_jobs <- . %>%
+  ggvis(~months, ~jobs, fill := "#9E4B6C", stroke := NA) %>%
+  layer_bars(width = 0.8) %>%
+  set_options(
+    duration = 0, 
+    padding = padding(0, 0, 0, 0), 
+    resizable = FALSE, 
+    renderer = "canvas"
+  )
+
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+make_jobs() %>% show_jobs()
+```

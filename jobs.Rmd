@@ -1,0 +1,40 @@
+---
+title: "Variation in the Jobs Report"
+output: html_document
+---
+
+Inspired by [How Not to Be Misled by the Jobs Report](http://www.nytimes.com/2014/05/02/upshot/how-not-to-be-misled-by-the-jobs-report.html?_r=0&abt=0002&abg=0), the Upshot.
+
+```{r, message = FALSE}
+library(ggvis)
+```
+
+Every month the US Department of Labor reports how many jobs were added to the economy. If this is lower (or higher!) than expected, the report generates many new articles, tweets, and even influences the stockmarket. But what if that's all just based on random variation due to the uncertainty associated with the estimate?
+
+```{r}
+real_jobs <- 150
+std_err <- 55
+```
+
+Take April 2014, for example. In May, the DoL reported that the economy had grown by `r real_jobs`,000 jobs, with a standard error of `r std_err`,000 jobs.
+
+```{r}
+rate <- 0
+months <- 1:12
+```
+
+What does that mean? Let's put it in the context of an imaginary year (which has `r length(months)` months) where the number jobs was the same in every month (e.g. the rate of change was `r rate`).
+
+We can write a small function to simulate from the distribution:
+
+```{r, fig.width = 4, fig.height = 3}
+simulate_jobs <- function(months, rate = 0, stderr = 55) {
+  jobs <- real_jobs + months * rate + rnorm(length(months), sd = stderr)
+  data.frame(months = months, jobs = jobs)
+}
+
+simulate_jobs(months) %>% 
+  ggvis(~months, ~jobs, fill := "#9E4B6C", stroke := NA) %>%
+  layer_bars(width = 0.8)
+```
+

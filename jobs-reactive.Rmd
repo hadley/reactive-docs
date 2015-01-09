@@ -1,0 +1,57 @@
+---
+title: "Variation in the Jobs Report"
+output: html_document
+runtime: shiny
+---
+
+Inspired by [How Not to Be Misled by the Jobs Report](http://www.nytimes.com/2014/05/02/upshot/how-not-to-be-misled-by-the-jobs-report.html?_r=0&abt=0002&abg=0), the Upshot.
+
+```{r, message = FALSE, echo = FALSE}
+library(ggvis)
+library(shiny)
+```
+
+Every month the US Department of Labor reports how many jobs were added to the economy. If this is lower (or higher!) than expected, the report generates many new articles, tweets, and even influences the stockmarket. But what if that's all just based on random variation due to the uncertainty associated with the estimate?
+
+```{r, echo = FALSE}
+real_jobs <- 150
+sliderInput("std_err", "Standard error", 0, 100, 55)
+```
+
+Take April 2014, for example. In May, the DoL reported that the economy had grown by `r renderText(input$real_jobs)`,000 jobs, with a standard error of `r renderText(input$std_err)`,000 jobs.
+
+```{r, echo = FALSE}
+sliderInput("rate", "Rate", -10, 10, 0)
+months <- 1:12
+
+direction <- reactive({
+  if (is.null(input$rate)) return("")
+  
+  if (input$rate < 0) {
+    paste0("decreased by ", -input$rate, ",000")
+  } else if (input$rate == 0) {
+    "stayed the same"
+  } else {
+    paste0("increased by ", input$rate, ",000")
+  }
+})
+```
+
+What does that mean? Let's put it in the context of an imaginary year (which has `r length(months)` months) where the number of jobs `r renderText(direction())` each month.
+
+```{r, fig.width = 4, fig.height = 3, echo = FALSE}
+simulate_jobs <- function(months, rate = 0, stderr = 55) {
+  if (is.null(stderr) || is.null(rate)) return(data.frame(months = 1:12, jobs = 1))
+  
+  jobs <- real_jobs + months * rate + rnorm(length(months), sd = stderr)
+  data.frame(months = months, jobs = jobs)
+}
+jobs <- reactive({
+  invalidateLater(1000, NULL)
+  simulate_jobs(months, input$rate, input$std_err)
+})
+
+jobs %>% 
+  ggvis(~months, ~jobs, fill := "#9E4B6C", stroke := NA) %>%
+  layer_bars(width = 0.8)
+```
